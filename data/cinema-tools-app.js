@@ -257,6 +257,49 @@
       audio: { recipe: cfg.audio.recipe, sub_count: A.subCount, sub_pos: cfg.audio.subPos, speakers: A.speakers.map(function (s) { return { channel: s.channel, x: s.x, y: s.y, zMm: s.z, klass: s.klass, az: s.az, el: s.el }; }) }
     };
   }
+  // ── PDF MODEL (v0.2.0) — everything the luxury proposal needs, computed once
+  // from the same helpers the tabs use, so the document can never disagree
+  // with the screen. Drawings travel as scenes (see SCENES below).
+  function pdfModel() {
+    var S = scr(), A = audioLayout(), R = riserRows(), cs = E.channelSummary(cfg.audio.recipe);
+    var td = throwMm(), tr = td / S.w, fl = E.footLamberts(cfg.projector.lumens, cfg.projector.gain, S.areaFt2), bv = E.brightnessVerdict(fl);
+    var lensY = screenY() + td, L = E.video().luminance, rm = E.room(cfg.room.w, cfg.room.d, cfg.room.h, 0.35);
+    var rows = [];
+    for (var i = 0; i < cfg.seating.rows; i++) {
+      var dd = rowDist(i), fov = E.hFov(S.w, dd), fv = E.fovVerdict(fov), rv = E.resVerdict(cfg.screen.contentRes, fov), vv = E.vertical(S, cfg.screen.bottomAfl, cfg.seating.eyeAfl, dd);
+      rows.push({ row: i + 1, mlp: i === mlp().row - 1, dist: r0(dd), fov: r1(fov), band: fv.band, pass: fv.pass, ppd: r0(rv.ppd), resPass: rv.pass, toTop: r1(vv.toTop), vPass: vv.pass });
+    }
+    var d = new Date();
+    return {
+      appVersion: CFG.version, generated: d.toISOString(),
+      dateText: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+      project: cfg.projectName || '', client: (ctx.project && (ctx.project.client_name || ctx.project.client)) || '',
+      label: cfg.label || defaultLabel(), isFinal: !!cfg._isFinal, notes: cfg.notes || '', configId: cfg._savedId,
+      flags: fitFlags(),
+      room: { w: cfg.room.w, d: cfg.room.d, h: cfg.room.h },
+      screen: { aspect: cfg.screen.aspect, diagIn: r1(S.diagIn), w: r0(S.w), h: r0(S.h), wIn: r1(S.wIn), hIn: r1(S.hIn), areaM2: r2(S.areaM2), areaFt2: r1(S.areaFt2), bottomAfl: cfg.screen.bottomAfl, topAfl: r0(cfg.screen.bottomAfl + S.h), centreAfl: r0(cfg.screen.bottomAfl + S.h / 2), contentRes: cfg.screen.contentRes, wallVoid: cfg.screen.wallVoid,
+        formats: CFG.ASPECTS.filter(function (a) { return a.id !== cfg.screen.aspect; }).map(function (a) { var b = E.bars(S, a.r), cih = E.screen(a.id, { hMm: S.h }), ciw = E.screen(a.id, { wMm: S.w }); return { id: a.id, cih: r0(cih.w) + ' × ' + r0(cih.h) + ' (' + r1(cih.diagIn) + '")', ciw: r0(ciw.w) + ' × ' + r0(ciw.h) + ' (' + r1(ciw.diagIn) + '")', bars: b.type === 'none' ? 'fills' : (b.type === 'letterbox' ? 'bars ' + r0(b.each) + ' mm' : 'pillars ' + r0(b.each) + ' mm') }; }) },
+      seating: { rows: cfg.seating.rows, perRow: cfg.seating.perRow, seats: cfg.seating.rows * cfg.seating.perRow, pitch: cfg.seating.pitch, firstRowDist: cfg.seating.firstRowDist, eyeAfl: cfg.seating.eyeAfl, earAfl: cfg.seating.earAfl, perW: cfg.seating.perW, depth: cfg.seating.depth, recline: cfg.seating.recline, refRow: mlp().row, run: r0(rowRun()), side: r0((cfg.room.w - rowRun()) / 2) },
+      viewing: { rows: rows, mlp: rows[mlp().row - 1], distTable: E.distanceTable(S).map(function (b) { return { key: b.key, fov: b.fov, dist: r0(b.dist) }; }) },
+      projector: { throwRatio: r2(tr), throwMm: r0(td), lensY: r0(lensY), fromRear: r0(cfg.room.d - lensY), lumens: cfg.projector.lumens, gain: cfg.projector.gain, fl: r1(fl), nits: r0(fl * L.flToNits), pass: bv.pass, note: bv.note, ceilingDrop: cfg.projector.ceilingDrop, over: lensY > cfg.room.d - 150,
+        lumensTable: [['SMPTE 196M reference', L.sdrReferenceFl], ['Design initial (lamp ageing)', L.designInitialFl], ['Some ambient light', L.ambientMinFl], ['High ambient / media room', L.ambientHighFl]].map(function (r) { return { target: r[0], fl: r[1], lumens: r0(E.requiredLumens(r[1], cfg.projector.gain, S.areaFt2)) }; }),
+        throwTable: [0.8, 1.0, 1.2, 1.4, 1.5, 1.7, 2.0, 2.4].map(function (r) { var x = E.throwDist(r, S.w); return { ratio: r.toFixed(2) + ':1', throwMm: r0(x), lens: r0(screenY() + x), cur: Math.abs(r - tr) < 0.05, over: screenY() + x > cfg.room.d }; }) },
+      riser: { rows: R.map(function (r) { return { row: r.row, dist: r0(r.dist), eyeReq: r0(r.eyeReq), raw: r0(r.riserRaw), build: r.riserBuild, rise: r.row === 1 ? null : r0(r.riseFromPrev), steps: r.row === 1 ? null : r.steps + ' × ' + r0(r.stepH) + ' mm' }; }),
+        rule: 'Eye of row n sees the screen bottom (' + cfg.screen.bottomAfl + ' mm AFL) over the head-top (eye + ' + cfg.riser.headTop + ' mm) of row n-1 with ' + cfg.riser.clearance + ' mm clearance. Builds round up to ' + cfg.riser.stepPref + ' mm; steps over ' + cfg.riser.stepMax + ' mm split (Approved Document K: 150-220 mm rise, 220 mm minimum going).' },
+      roomAc: { vol: r1(rm.volM3), area: r1(cfg.room.w * cfg.room.d / 1e6), ratioW: r2(rm.ratioW), ratioL: r2(rm.ratioL), nearest: rm.nearest.name, schroeder: r0(rm.schroeder), cubeWarn: !!rm.cubeWarn, clashes: rm.clashes || [], modes: rm.modes, refs: rm.refs.map(function (r) { return { name: r.name, w: r.w, l: r.l, forH: r0(r.w * cfg.room.h) + ' × ' + r0(r.l * cfg.room.h), err: r2(r.err) }; }) },
+      audio: { recipe: cfg.audio.recipe, discrete: cs.discrete, subCount: A.subCount, subPos: cfg.audio.subPos, groups: cs.groups, mlpRow: A.mlp.row, mlpDist: r0(rowDist(A.mlp.row - 1)), earAfl: cfg.seating.earAfl,
+        fails: A.speakers.filter(function (s) { return s.verdict.pass === 'fail'; }).length, warns: A.speakers.filter(function (s) { return s.verdict.pass === 'warn'; }).length,
+        legend: Object.keys(CFG.SPEAKER_KLASS).map(function (k) { return { key: k, label: CFG.SPEAKER_KLASS[k].label, hex: CFG.SPEAKER_KLASS[k].hex }; }),
+        speakers: A.speakers.map(function (s) { return { channel: s.channel, label: lab(s.channel), name: s.name, note: s.note || '', x: r0(s.x), y: r0(s.y), z: r0(s.z), side: s.side, az: s.az, el: s.el, dist: r0(s.dist), klass: s.klass, hex: CFG.SPEAKER_KLASS[s.klass].hex, pass: s.verdict.pass, vnote: s.verdict.note || '' }; }) },
+      scenes: { plan: planScene(true, { speakers: true }), planClean: planScene(true, { speakers: false }), section: sectionScene(true), screen: screenScene(S) }
+    };
+  }
+  async function exportPdf() {
+    var P = global.CinemaToolsPdf;
+    if (!P || !P.available()) { toast('PDF engine not loaded — use Print / PDF', 'fail'); return; }
+    try { toast('Building proposal PDF…'); await P.generate(pdfModel()); toast('Proposal PDF downloaded'); }
+    catch (e) { console.error('[cinema-tools] pdf', e); toast('PDF failed: ' + (e && e.message || e), 'fail'); }
+  }
   async function publishFinal() {
     var db = dbc(); if (!db || !cfg.projectId) return;
     var patch = {}; patch[CFG.METADATA_KEY] = finalSpec();
@@ -333,7 +376,7 @@
     } else if (t === 'output') {
       title = 'Design <span class="lt">option</span>.'; lead = 'Everything above on one sheet — the same strip + scale plan the Seating Configurator produces, with a section, the audio schedule and the numbers Cinema Design will reference.';
       left = panel('This option', '<label class="fld2"><span>Label</span><input type="text" value="' + esc(cfg.label) + '" placeholder="' + esc(defaultLabel()) + '" onchange="CinemaToolsApp.setLabel(this.value)"></label><label class="fld2 col"><span>Notes</span><textarea rows="3" onchange="CinemaToolsApp.setNotes(this.value)">' + esc(cfg.notes) + '</textarea></label>' +
-        '<div class="actions" style="margin-top:12px;flex-wrap:wrap"><button class="btn primary" onclick="CinemaToolsApp.saveOption(false)">' + (cfg._savedId ? 'Save changes' : 'Save option') + '</button>' + (cfg._savedId ? '<button class="btn ghost" onclick="CinemaToolsApp.saveOption(true)">Save as new</button>' : '') + '<button class="btn ghost" onclick="CinemaToolsApp.setFinal()" ' + (cfg._isFinal ? 'disabled' : '') + '>★ Set as FINAL for CD</button><button class="btn sec" onclick="window.print()">Print / PDF</button><button class="btn sec" onclick="CinemaToolsApp.downloadSVG()">Download plan SVG</button></div>' +
+        '<div class="actions" style="margin-top:12px;flex-wrap:wrap"><button class="btn primary" onclick="CinemaToolsApp.saveOption(false)">' + (cfg._savedId ? 'Save changes' : 'Save option') + '</button>' + (cfg._savedId ? '<button class="btn ghost" onclick="CinemaToolsApp.saveOption(true)">Save as new</button>' : '') + '<button class="btn ghost" onclick="CinemaToolsApp.setFinal()" ' + (cfg._isFinal ? 'disabled' : '') + '>★ Set as FINAL for CD</button><button class="btn sec" onclick="CinemaToolsApp.exportPdf()">Proposal PDF</button><button class="btn ghost" onclick="window.print()">Print</button><button class="btn sec" onclick="CinemaToolsApp.downloadSVG()">Download plan SVG</button></div>' +
         finalBadge(), 'saved-panel') + '<div id="savedPanel"></div>';
     }
     body.innerHTML = '<div class="lead"><h2>' + title + '</h2><p>' + lead + '</p></div><div class="cfg-grid' + (t === 'output' ? ' out' : '') + '"><div class="cfg-left">' + left + '</div><div class="sticky" id="results"></div></div>';
@@ -429,130 +472,156 @@
     }).join('') + '</tbody></table><div class="hint">Azimuth from MLP (0° = screen centre, L/R); elevation from ear plane (' + mm(cfg.seating.earAfl) + '). Bands per RP22 §5.5–5.8 + Dolby upper-layer guidance (tops judged on the fore/aft “f/a” angle, as the section diagrams measure it). Subwoofers: corner/SBA convention as Cinema Design — final positions by measurement.</div>';
   }
 
-  // ── SVG — PLAN (Seating Configurator visual language) ────────────────────
-  var FONT = 'Gilroy,system-ui', DIMC = 'rgba(173,153,120,0.9)';
-  var G = function (a) { return 'rgba(200,180,142,' + a + ')'; };
-  function rr(x, y, w, h, r, fill, stroke, sw, extra) { return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + Math.max(0, w).toFixed(1) + '" height="' + Math.max(0, h).toFixed(1) + '" rx="' + r + '" fill="' + (fill || 'none') + '"' + (stroke ? ' stroke="' + stroke + '" stroke-width="' + (sw || 1) + '"' : '') + (extra || '') + '/>'; }
-  function txt(s, x, y, size, fill, anchor, ls, extra) { return '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + size + '" fill="' + fill + '" font-family="' + FONT + '"' + (anchor ? ' text-anchor="' + anchor + '"' : '') + (ls ? ' letter-spacing="' + ls + '"' : '') + (extra || '') + '>' + s + '</text>'; }
-  function line(x1, y1, x2, y2, c, w, dash) { return '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + c + '" stroke-width="' + (w || 0.7) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>'; }
-  function dimH(x1, x2, y, label, above) { return line(x1, y, x2, y, DIMC) + line(x1, y - 3, x1, y + 3, DIMC) + line(x2, y - 3, x2, y + 3, DIMC) + txt(label, (x1 + x2) / 2, above ? y - 4 : y + 10, 8, DIMC, 'middle'); }
-  function dimV(x, y1, y2, label) { return line(x, y1, x, y2, DIMC) + line(x - 3, y1, x + 3, y1, DIMC) + line(x - 3, y2, x + 3, y2, DIMC) + txt(label, x - 5, (y1 + y2) / 2, 8, DIMC, 'middle', null, ' transform="rotate(-90 ' + (x - 5).toFixed(1) + ' ' + ((y1 + y2) / 2).toFixed(1) + ')"'); }
+  // ── SCENES — backend-agnostic drawing (v0.2.0) ────────────────────────────
+  // Each drawing is built ONCE as a list of primitives in box units, then
+  // rendered by a backend: svgOf() for the app (dark theme) and
+  // CinemaToolsPdf (cream page, seating CAD language). Colours are TOKENS so
+  // both backends map them to their own palette; speaker/format colours pass
+  // through as explicit hex. Keep the two backends in lock-step — never draw
+  // in one place only.
+  var SCENE_TOKENS_SVG = {
+    g85: 'rgba(200,180,142,0.85)', g80: 'rgba(200,180,142,0.8)', g75: 'rgba(200,180,142,0.75)', g70: 'rgba(200,180,142,0.7)',
+    g55: 'rgba(200,180,142,0.55)', g50: 'rgba(200,180,142,0.5)', g45: 'rgba(200,180,142,0.45)', g35: 'rgba(200,180,142,0.35)',
+    g28: 'rgba(200,180,142,0.28)', g25: 'rgba(200,180,142,0.25)', g14: 'rgba(200,180,142,0.14)',
+    room: 'rgba(9,7,15,0.55)', voidF: 'rgba(128,88,161,0.06)', pur16: 'rgba(128,88,161,0.16)', pur14: 'rgba(128,88,161,0.14)',
+    pur12: 'rgba(128,88,161,0.12)', pur10: 'rgba(128,88,161,0.10)', pur08: 'rgba(128,88,161,0.08)', purS: 'rgba(128,88,161,0.55)',
+    sight: 'rgba(128,88,161,0.6)', sight2: 'rgba(128,88,161,0.3)', gold: '#ad9978', goldL: '#c8b48e', pjF: 'rgba(173,153,120,0.18)',
+    pjS: 'rgba(173,153,120,0.35)', riser: 'rgba(173,153,120,0.10)', dim: 'rgba(173,153,120,0.9)', cap: 'rgba(143,133,116,0.9)',
+    diag: 'rgba(200,180,142,0.35)', ink: '#0a0908', none: 'none'
+  };
+  function Scene(w, h) { this.w = w; this.h = h; this.items = []; }
+  Scene.prototype.rect = function (x, y, w, h, r, fill, stroke, sw, dash) { this.items.push({ t: 'rect', x: x, y: y, w: Math.max(0, w), h: Math.max(0, h), r: r || 0, f: fill || 'none', s: stroke || null, sw: sw || 1, dash: dash || null }); return this; };
+  Scene.prototype.line = function (x1, y1, x2, y2, c, w, dash) { this.items.push({ t: 'line', x1: x1, y1: y1, x2: x2, y2: y2, s: c, sw: w || 0.7, dash: dash || null }); return this; };
+  Scene.prototype.text = function (s, x, y, size, c, anchor, ls, o) { o = o || {}; this.items.push({ t: 'text', s: String(s), x: x, y: y, size: size, f: c, a: anchor || 'start', ls: ls || 0, b: !!o.bold, rot: o.rot || 0 }); return this; };
+  Scene.prototype.circle = function (cx, cy, r, fill, stroke, sw) { this.items.push({ t: 'circle', cx: cx, cy: cy, r: r, f: fill || 'none', s: stroke || null, sw: sw || 1 }); return this; };
+  Scene.prototype.poly = function (pts, fill, stroke, sw) { this.items.push({ t: 'poly', pts: pts, f: fill || 'none', s: stroke || null, sw: sw || 1 }); return this; };
+  Scene.prototype.dimH = function (x1, x2, y, label, above) { return this.line(x1, y, x2, y, 'dim').line(x1, y - 3, x1, y + 3, 'dim').line(x2, y - 3, x2, y + 3, 'dim').text(label, (x1 + x2) / 2, above ? y - 4 : y + 10, 8, 'dim', 'middle'); };
+  Scene.prototype.dimV = function (x, y1, y2, label) { return this.line(x, y1, x, y2, 'dim').line(x - 3, y1, x + 3, y1, 'dim').line(x - 3, y2, x + 3, y2, 'dim').text(label, x - 5, (y1 + y2) / 2, 8, 'dim', 'middle', 0, { rot: -90 }); };
 
-  function planSVG(big, o) {
+  var FONT = 'Gilroy,system-ui';
+  function svgOf(sc, maxW) {
+    var T = SCENE_TOKENS_SVG, c = function (k) { return k && T[k] ? T[k] : (k || 'none'); }, f1 = function (n) { return (+n).toFixed(1); };
+    var s = sc.items.map(function (it) {
+      var st = it.s ? ' stroke="' + c(it.s) + '" stroke-width="' + it.sw + '"' + (it.dash ? ' stroke-dasharray="' + it.dash + '"' : '') : '';
+      if (it.t === 'rect') return '<rect x="' + f1(it.x) + '" y="' + f1(it.y) + '" width="' + f1(it.w) + '" height="' + f1(it.h) + '" rx="' + it.r + '" fill="' + c(it.f) + '"' + st + '/>';
+      if (it.t === 'line') return '<line x1="' + f1(it.x1) + '" y1="' + f1(it.y1) + '" x2="' + f1(it.x2) + '" y2="' + f1(it.y2) + '"' + st + '/>';
+      if (it.t === 'circle') return '<circle cx="' + f1(it.cx) + '" cy="' + f1(it.cy) + '" r="' + f1(it.r) + '" fill="' + c(it.f) + '"' + st + '/>';
+      if (it.t === 'poly') return '<polygon points="' + it.pts.map(function (p) { return f1(p[0]) + ',' + f1(p[1]); }).join(' ') + '" fill="' + c(it.f) + '"' + st + '/>';
+      if (it.t === 'text') return '<text x="' + f1(it.x) + '" y="' + f1(it.y) + '" font-size="' + it.size + '" fill="' + c(it.f) + '" font-family="' + FONT + '"' + (it.a !== 'start' ? ' text-anchor="' + it.a + '"' : '') + (it.ls ? ' letter-spacing="' + it.ls + '"' : '') + (it.b ? ' font-weight="700"' : '') + (it.rot ? ' transform="rotate(' + it.rot + ' ' + f1(it.x) + ' ' + f1(it.y) + ')"' : '') + '>' + esc(it.s) + '</text>';
+      return '';
+    }).join('');
+    return '<svg viewBox="0 0 ' + sc.w + ' ' + sc.h + '" width="100%" style="max-width:' + (maxW || 500) + 'px;display:block" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+  }
+
+  // ── PLAN (Seating Configurator visual language) ────────────────────────────
+  function planScene(big, o) {
     o = o || {}; var S = scr(), RW = cfg.room.w, RD = cfg.room.d, st = cfg.seating;
     var boxW = big ? 680 : 460, boxH = big ? 560 : 400, padL = 44, padR = 48, padT = 30, padB = 42;
     var sc = Math.min((boxW - padL - padR) / RW, (boxH - padT - padB) / RD);
     var rw = RW * sc, rl = RD * sc, rx = padL + ((boxW - padL - padR) - rw) / 2, ry = padT + ((boxH - padT - padB) - rl) / 2;
     var X = function (mmx) { return rx + mmx * sc; }, Y = function (mmy) { return ry + mmy * sc; };
-    var s = '';
-    s += rr(rx - 2.5, ry - 2.5, rw + 5, rl + 5, 3, 'none', G(0.55), 1.3);
-    s += rr(rx, ry, rw, rl, 2, 'rgba(9,7,15,0.55)', G(0.35), 0.7);
-    // screen wall void + screen
-    if (cfg.screen.wallVoid > 0) s += rr(rx, ry, rw, cfg.screen.wallVoid * sc, 0, 'rgba(128,88,161,0.06)', G(0.25), 0.5, ' stroke-dasharray="3,3"');
-    s += rr(X((RW - S.w) / 2), Y(cfg.screen.wallVoid) - 2, S.w * sc, 4, 1.5, '#ad9978');
-    s += txt('S C R E E N', rx + rw / 2, Y(cfg.screen.wallVoid) + 12, 6, G(0.8), 'middle', 3);
-    // listening area + MLP
+    var d = new Scene(boxW, boxH);
+    d.rect(rx - 2.5, ry - 2.5, rw + 5, rl + 5, 3, 'none', 'g55', 1.3);
+    d.rect(rx, ry, rw, rl, 2, 'room', 'g35', 0.7);
+    if (cfg.screen.wallVoid > 0) d.rect(rx, ry, rw, cfg.screen.wallVoid * sc, 0, 'voidF', 'g25', 0.5, '3,3');
+    d.rect(X((RW - S.w) / 2), Y(cfg.screen.wallVoid) - 2, S.w * sc, 4, 1.5, 'gold');
+    d.text('S C R E E N', rx + rw / 2, Y(cfg.screen.wallVoid) + 12, 6, 'g80', 'middle', 3);
     var LA = la(), M = mlp();
-    s += rr(X(LA.x), Y(LA.y), LA.w * sc, LA.h * sc, 3, 'none', 'rgba(128,88,161,0.55)', 0.8, ' stroke-dasharray="4,3"');
-    // seats
+    d.rect(X(LA.x), Y(LA.y), LA.w * sc, LA.h * sc, 3, 'none', 'purS', 0.8, '4,3');
     var seatPX = st.perW * sc, uprPX = st.depth * sc, reclPX = st.recline * sc, run = rowRun();
     var sx0 = X((RW - run) / 2);
     for (var r = 0; r < st.rows; r++) {
       var ey = Y(eyeY(r)), sp = seatSpan(r), ryU = Y(sp.y0), ryR = ryU + uprPX - reclPX;
       var cx = sx0;
       for (var i = 0; i < st.perRow; i++) {
-        if (reclPX > uprPX + 2) s += rr(cx + 1, ryR, seatPX - 2, reclPX, 2, 'none', G(0.28), 0.7);
-        s += rr(cx, ryU, seatPX, uprPX, 3, 'rgba(128,88,161,0.14)', G(0.85), 1);
-        s += rr(cx + seatPX * 0.15 + 2, ryU + uprPX * 0.08, seatPX * 0.7 - 4, uprPX * 0.52, 2, 'none', G(0.5), 0.7);
-        s += rr(cx + seatPX * 0.15 + 2, ryU + uprPX * 0.66, seatPX * 0.7 - 4, uprPX * 0.26, 2, G(0.14), G(0.7), 0.9);
+        if (reclPX > uprPX + 2) d.rect(cx + 1, ryR, seatPX - 2, reclPX, 2, 'none', 'g28', 0.7);
+        d.rect(cx, ryU, seatPX, uprPX, 3, 'pur14', 'g85', 1);
+        d.rect(cx + seatPX * 0.15 + 2, ryU + uprPX * 0.08, seatPX * 0.7 - 4, uprPX * 0.52, 2, 'none', 'g50', 0.7);
+        d.rect(cx + seatPX * 0.15 + 2, ryU + uprPX * 0.66, seatPX * 0.7 - 4, uprPX * 0.26, 2, 'g14', 'g70', 0.9);
         cx += seatPX;
       }
-      s += txt('R' + (r + 1), sx0 - 6, ey + 3, 7, G(0.7), 'end');
+      d.text('R' + (r + 1), sx0 - 6, ey + 3, 7, 'g70', 'end');
     }
-    s += '<circle cx="' + X(M.x).toFixed(1) + '" cy="' + Y(M.y).toFixed(1) + '" r="4" fill="none" stroke="#c8b48e" stroke-width="1"/>' + line(X(M.x) - 7, Y(M.y), X(M.x) + 7, Y(M.y), '#c8b48e', 0.8) + line(X(M.x), Y(M.y) - 7, X(M.x), Y(M.y) + 7, '#c8b48e', 0.8);
-    // projector
+    d.circle(X(M.x), Y(M.y), 4, 'none', 'goldL', 1).line(X(M.x) - 7, Y(M.y), X(M.x) + 7, Y(M.y), 'goldL', 0.8).line(X(M.x), Y(M.y) - 7, X(M.x), Y(M.y) + 7, 'goldL', 0.8);
     var lensY = screenY() + throwMm();
-    if (lensY < RD) s += rr(X(RW / 2) - 9, Y(lensY) - 6, 18, 12, 2, 'rgba(173,153,120,0.18)', '#ad9978', 0.9) + txt('PJ', X(RW / 2), Y(lensY) + 3, 6, '#c8b48e', 'middle');
-    // speakers
+    if (lensY < RD) d.rect(X(RW / 2) - 9, Y(lensY) - 6, 18, 12, 2, 'pjF', 'gold', 0.9).text('PJ', X(RW / 2), Y(lensY) + 3, 6, 'goldL', 'middle');
     if (o.speakers) {
       var A = audioLayout();
       A.speakers.forEach(function (sp) {
         var col = CFG.SPEAKER_KLASS[sp.klass].hex, px = X(sp.x), py = Y(sp.y), rad = sp.klass === 'sub' ? 7 : 5.5;
         var upper = /^top|height/.test(sp.klass);
-        if (sp.klass === 'sub') s += rr(px - rad, py - rad, rad * 2, rad * 2, 2, col, '#0a0908', 1);
-        else if (upper) s += '<polygon points="' + (px - rad).toFixed(1) + ',' + (py + rad * 0.85).toFixed(1) + ' ' + (px + rad).toFixed(1) + ',' + (py + rad * 0.85).toFixed(1) + ' ' + px.toFixed(1) + ',' + (py - rad).toFixed(1) + '" fill="' + col + '" stroke="#0a0908" stroke-width="1"/>';
-        else s += '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="' + rad + '" fill="' + col + '" stroke="#0a0908" stroke-width="1"/>';
+        if (sp.klass === 'sub') d.rect(px - rad, py - rad, rad * 2, rad * 2, 2, col, 'ink', 1);
+        else if (upper) d.poly([[px - rad, py + rad * 0.85], [px + rad, py + rad * 0.85], [px, py - rad]], col, 'ink', 1);
+        else d.circle(px, py, rad, col, 'ink', 1);
         var lx = px + (sp.x < RW / 2 ? -9 : 9), anchor = sp.x < RW / 2 ? 'end' : 'start';
         if (sp.klass === 'screen' || sp.channel === 'HFC' || sp.channel === 'TMC') { lx = px; anchor = 'middle'; }
-        s += txt(esc(lab(sp.channel)), lx, py + (anchor === 'middle' ? (sp.y < RD / 2 ? -9 : 15) : 3), 6.5, col, anchor, 0.5, ' font-weight="700"');
+        d.text(lab(sp.channel), lx, py + (anchor === 'middle' ? (sp.y < RD / 2 ? -9 : 15) : 3), 6.5, col, anchor, 0.5, { bold: true });
       });
     }
-    // dims
-    s += dimH(rx, rx + rw, ry - 12, RW + '', true);
-    s += dimV(rx - 14, ry, ry + rl, RD + '');
-    var side = r0((RW - run) / 2); if (side > 0) { var syc = Y(eyeY(st.rows - 1)); s += dimH(rx, sx0, syc, side + '', true); s += dimH(sx0 + run * sc, rx + rw, syc, side + '', true); }
-    s += dimH(sx0, sx0 + run * sc, ry + rl + 12, r0(run) + '', false);
-    s += dimV(rx + rw + 14, Y(screenY()), Y(eyeY(0)), r0(st.firstRowDist) + '');
-    if (st.rows > 1) s += dimV(rx + rw + 14, Y(eyeY(0)), Y(eyeY(1)), r0(st.pitch) + '');
-    s += dimH(X((RW - S.w) / 2), X((RW + S.w) / 2), Y(cfg.screen.wallVoid) - 10, r0(S.w) + '', true);
-    s += txt((o.speakers ? cfg.audio.recipe + ' · ' : '') + inch(S.diagIn) + ' ' + esc(cfg.screen.aspect) + ' · ' + st.rows + '×' + st.perRow + ' · dims in mm · plan', boxW / 2, boxH - 6, 8.5, 'rgba(143,133,116,0.9)', 'middle');
-    return '<svg viewBox="0 0 ' + boxW + ' ' + boxH + '" width="100%" style="max-width:' + (big ? 760 : 500) + 'px;display:block" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+    d.dimH(rx, rx + rw, ry - 12, RW + '', true);
+    d.dimV(rx - 14, ry, ry + rl, RD + '');
+    var side = r0((RW - run) / 2); if (side > 0) { var syc = Y(eyeY(st.rows - 1)); d.dimH(rx, sx0, syc, side + '', true); d.dimH(sx0 + run * sc, rx + rw, syc, side + '', true); }
+    d.dimH(sx0, sx0 + run * sc, ry + rl + 12, r0(run) + '', false);
+    d.dimV(rx + rw + 14, Y(screenY()), Y(eyeY(0)), r0(st.firstRowDist) + '');
+    if (st.rows > 1) d.dimV(rx + rw + 14, Y(eyeY(0)), Y(eyeY(1)), r0(st.pitch) + '');
+    d.dimH(X((RW - S.w) / 2), X((RW + S.w) / 2), Y(cfg.screen.wallVoid) - 10, r0(S.w) + '', true);
+    d.text((o.speakers ? cfg.audio.recipe + ' · ' : '') + inch(S.diagIn) + ' ' + cfg.screen.aspect + ' · ' + st.rows + '×' + st.perRow + ' · dims in mm · plan', boxW / 2, boxH - 6, 8.5, 'cap', 'middle');
+    return d;
   }
+  function planSVG(big, o) { return svgOf(planScene(big, o), big ? 760 : 500); }
 
-  // ── SVG — SECTION (side view: screen, rows, risers, sightlines, projector)
-  function sectionSVG(big) {
+  // ── SECTION (side view: screen, rows, risers, sightlines, projector) ──────
+  function sectionScene(big) {
     var S = scr(), RD = cfg.room.d, RH = cfg.room.h, st = cfg.seating, R = riserRows();
     var boxW = big ? 680 : 460, boxH = big ? 330 : 250, padL = 44, padR = 48, padT = 26, padB = 40;
     var sc = Math.min((boxW - padL - padR) / RD, (boxH - padT - padB) / RH);
     var rl = RD * sc, rh = RH * sc, rx = padL + ((boxW - padL - padR) - rl) / 2, ry = padT + ((boxH - padT - padB) - rh) / 2;
     var X = function (y) { return rx + y * sc; }, Z = function (z) { return ry + rh - z * sc; };
-    var s = '';
-    s += rr(rx - 2.5, ry - 2.5, rl + 5, rh + 5, 3, 'none', G(0.55), 1.3);
-    s += rr(rx, ry, rl, rh, 2, 'rgba(9,7,15,0.55)', G(0.35), 0.7);
-    // screen
+    var d = new Scene(boxW, boxH);
+    d.rect(rx - 2.5, ry - 2.5, rl + 5, rh + 5, 3, 'none', 'g55', 1.3);
+    d.rect(rx, ry, rl, rh, 2, 'room', 'g35', 0.7);
     var sy = X(screenY()), sb = cfg.screen.bottomAfl, stp = sb + S.h;
-    s += line(sy, Z(sb), sy, Z(stp), '#ad9978', 3);
-    s += txt('SCREEN', sy + 4, Z(stp) - 4, 6, G(0.8), null, 1.5);
-    // risers + seats + eyes
+    d.line(sy, Z(sb), sy, Z(stp), 'gold', 3);
+    d.text('SCREEN', sy + 4, Z(stp) - 4, 6, 'g80', 'start', 1.5);
     for (var i = 0; i < st.rows; i++) {
       var ey = eyeY(i), build = R[i].riserBuild, sp = seatSpan(i), y0 = sp.y0, y1 = sp.y1;
-      if (build > 0) { var pr = y0 - st.pitch * 0.15; s += rr(X(pr), Z(build), (Math.min(RD, y1 + st.pitch * 0.35) - pr) * sc, build * sc, 0, 'rgba(173,153,120,0.10)', G(0.45), 0.7); }
-      // chair side profile: plinth, seat pan, backrest + headrest (recliner proportions)
-      s += rr(X(y0 + 80), Z(build + 150), (y1 - y0 - 160) * sc, 150 * sc, 1, 'rgba(128,88,161,0.08)', G(0.45), 0.7);
-      s += rr(X(y0), Z(build + 480), (y1 - y0 - 120) * sc, 330 * sc, 3, 'rgba(128,88,161,0.16)', G(0.85), 1);
-      s += rr(X(y1 - 260), Z(build + st.eyeAfl + cfg.riser.headTop), 260 * sc, (st.eyeAfl + cfg.riser.headTop - 150) * sc, 4, 'rgba(128,88,161,0.12)', G(0.7), 0.9);
-      s += '<circle cx="' + X(ey).toFixed(1) + '" cy="' + Z(build + st.eyeAfl + 60).toFixed(1) + '" r="' + (110 * sc).toFixed(1) + '" fill="rgba(128,88,161,0.10)" stroke="' + G(0.5) + '" stroke-width="0.7"/>';
+      if (build > 0) { var pr = y0 - st.pitch * 0.15; d.rect(X(pr), Z(build), (Math.min(RD, y1 + st.pitch * 0.35) - pr) * sc, build * sc, 0, 'riser', 'g45', 0.7); }
+      d.rect(X(y0 + 80), Z(build + 150), (y1 - y0 - 160) * sc, 150 * sc, 1, 'pur08', 'g45', 0.7);
+      d.rect(X(y0), Z(build + 480), (y1 - y0 - 120) * sc, 330 * sc, 3, 'pur16', 'g85', 1);
+      d.rect(X(y1 - 260), Z(build + st.eyeAfl + cfg.riser.headTop), 260 * sc, (st.eyeAfl + cfg.riser.headTop - 150) * sc, 4, 'pur12', 'g70', 0.9);
+      d.circle(X(ey), Z(build + st.eyeAfl + 60), 110 * sc, 'pur10', 'g50', 0.7);
       var ez = build + st.eyeAfl;
-      s += '<circle cx="' + X(ey).toFixed(1) + '" cy="' + Z(ez).toFixed(1) + '" r="2.2" fill="#c8b48e"/>';
-      s += line(X(ey), Z(ez), sy, Z(sb), 'rgba(128,88,161,0.6)', 0.6, '3,2');
-      s += line(X(ey), Z(ez), sy, Z(stp), 'rgba(128,88,161,0.3)', 0.5, '2,3');
-      s += txt('R' + (i + 1) + (build ? ' +' + build : ''), X(ey), Z(build) + 9 > ry + rh ? Z(0) - 3 : Z(build) - 3, 6.5, G(0.75), 'middle');
+      d.circle(X(ey), Z(ez), 2.2, 'goldL');
+      d.line(X(ey), Z(ez), sy, Z(sb), 'sight', 0.6, '3,2');
+      d.line(X(ey), Z(ez), sy, Z(stp), 'sight2', 0.5, '2,3');
+      d.text('R' + (i + 1) + (build ? ' +' + build : ''), X(ey), Z(build) + 9 > ry + rh ? Z(0) - 3 : Z(build) - 3, 6.5, 'g75', 'middle');
     }
-    // projector
     var pz = RH - cfg.projector.ceilingDrop, py = screenY() + throwMm();
-    if (py < RD) { s += rr(X(py) - 8, Z(pz) - 4, 16, 8, 1.5, 'rgba(173,153,120,0.18)', '#ad9978', 0.9); s += line(X(py) - 8, Z(pz), sy, Z(stp), 'rgba(173,153,120,0.35)', 0.5, '2,2') + line(X(py) - 8, Z(pz), sy, Z(sb), 'rgba(173,153,120,0.35)', 0.5, '2,2'); s += txt('PJ ' + r2(throwMm() / S.w) + ':1', X(py), Z(pz) - 7, 6, '#c8b48e', 'middle'); }
-    // dims
-    s += dimH(rx, rx + rl, ry + rh + 12, RD + '', false);
-    s += dimV(rx - 14, ry, ry + rh, RH + '');
-    s += dimV(rx + rl + 14, Z(stp), Z(sb), r0(S.h) + '');
-    s += dimV(rx + rl + 30, Z(sb), Z(0), sb + '');
-    s += txt('section · eye ' + st.eyeAfl + ' AFL · sightlines to screen bottom · dims in mm', boxW / 2, boxH - 6, 8.5, 'rgba(143,133,116,0.9)', 'middle');
-    return '<svg viewBox="0 0 ' + boxW + ' ' + boxH + '" width="100%" style="max-width:' + (big ? 760 : 500) + 'px;display:block" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+    if (py < RD) { d.rect(X(py) - 8, Z(pz) - 4, 16, 8, 1.5, 'pjF', 'gold', 0.9); d.line(X(py) - 8, Z(pz), sy, Z(stp), 'pjS', 0.5, '2,2').line(X(py) - 8, Z(pz), sy, Z(sb), 'pjS', 0.5, '2,2'); d.text('PJ ' + r2(throwMm() / S.w) + ':1', X(py), Z(pz) - 7, 6, 'goldL', 'middle'); }
+    d.dimH(rx, rx + rl, ry + rh + 12, RD + '', false);
+    d.dimV(rx - 14, ry, ry + rh, RH + '');
+    d.dimV(rx + rl + 14, Z(stp), Z(sb), r0(S.h) + '');
+    d.dimV(rx + rl + 30, Z(sb), Z(0), sb + '');
+    d.text('section · eye ' + st.eyeAfl + ' AFL · sightlines to screen bottom · dims in mm', boxW / 2, boxH - 6, 8.5, 'cap', 'middle');
+    return d;
   }
+  function sectionSVG(big) { return svgOf(sectionScene(big), big ? 760 : 500); }
 
-  // ── SVG — SCREEN FACE with format overlays
-  function screenSVG(S) {
+  // ── SCREEN FACE with format overlays ───────────────────────────────────────
+  function screenScene(S) {
     var boxW = 460, boxH = 300, pad = 40;
     var sc = Math.min((boxW - 2 * pad) / S.w, (boxH - 2 * pad - 20) / S.h);
     var w = S.w * sc, h = S.h * sc, x = (boxW - w) / 2, y = (boxH - 20 - h) / 2 + 6;
-    var s = rr(x, y, w, h, 2, 'rgba(128,88,161,0.12)', '#ad9978', 1.4);
-    var others = [['2.39', 2.39, 'rgba(75,185,211,0.8)'], ['16:9', 16 / 9, 'rgba(230,126,177,0.8)'], ['1.85', 1.85, 'rgba(120,186,87,0.8)']].filter(function (a) { return Math.abs(a[1] - S.ratio) > 0.02; });
-    others.forEach(function (a) { var b = E.bars(S, a[1]); var iw = b.imageW * sc, ih = b.imageH * sc; s += rr(x + (w - iw) / 2, y + (h - ih) / 2, iw, ih, 1, 'none', a[2], 0.7, ' stroke-dasharray="4,3"'); s += txt(a[0] + (b.type === 'letterbox' ? ' ▬ ' + r0(b.each) : b.type === 'pillarbox' ? ' ▮ ' + r0(b.each) : ''), x + (w - iw) / 2 + 4, y + (h - ih) / 2 + 9, 6.5, a[2]); });
-    s += dimH(x, x + w, y - 10, r0(S.w) + ' (' + r1(S.wIn) + '")', true) + dimV(x - 12, y, y + h, r0(S.h) + ' (' + r1(S.hIn) + '")');
-    s += line(x, y + h, x + w, y, 'rgba(200,180,142,0.35)', 0.6, '2,3') + txt(inch(S.diagIn) + ' · ' + r0(S.diag) + ' mm', x + w / 2, y + h / 2 + 3, 8, '#c8b48e', 'middle');
-    s += txt(esc(cfg.screen.aspect) + ' screen face · dashed = other formats on this screen · bar height in mm', boxW / 2, boxH - 6, 8.5, 'rgba(143,133,116,0.9)', 'middle');
-    return '<svg viewBox="0 0 ' + boxW + ' ' + boxH + '" width="100%" style="max-width:500px;display:block" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+    var d = new Scene(boxW, boxH);
+    d.rect(x, y, w, h, 2, 'pur12', 'gold', 1.4);
+    var others = [['2.39', 2.39, '#4bb9d3'], ['16:9', 16 / 9, '#e67eb1'], ['1.85', 1.85, '#78ba57']].filter(function (a) { return Math.abs(a[1] - S.ratio) > 0.02; });
+    others.forEach(function (a, i) { var b = E.bars(S, a[1]); var iw = b.imageW * sc, ih = b.imageH * sc; d.rect(x + (w - iw) / 2, y + (h - ih) / 2, iw, ih, 1, 'none', a[2], 0.7, '4,3'); d.text(a[0] + (b.type === 'letterbox' ? ' bars ' + r0(b.each) : b.type === 'pillarbox' ? ' pillars ' + r0(b.each) : ''), x + (w - iw) / 2 + 4, y + (h - ih) / 2 + 9 + i * 9, 6.5, a[2]); });
+    d.dimH(x, x + w, y - 10, r0(S.w) + ' (' + r1(S.wIn) + '")', true).dimV(x - 12, y, y + h, r0(S.h) + ' (' + r1(S.hIn) + '")');
+    d.line(x, y + h, x + w, y, 'diag', 0.6, '2,3').text(inch(S.diagIn) + ' · ' + r0(S.diag) + ' mm', x + w / 2, y + h / 2 + 3, 8, 'goldL', 'middle');
+    d.text(cfg.screen.aspect + ' screen face · dashed = other formats on this screen · bar height in mm', boxW / 2, boxH - 6, 8.5, 'cap', 'middle');
+    return d;
   }
+  function screenSVG(S) { return svgOf(screenScene(S), 500); }
   function downloadSVG() {
     var svg = planSVG(true, { speakers: true }).replace('<svg ', '<svg style="background:#0b0a0c" ');
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })); a.download = ((cfg.projectName || 'cinema') + ' - ' + (cfg.label || defaultLabel()) + ' - plan.svg').replace(/[\/\\:]/g, '-'); a.click();
@@ -586,5 +655,5 @@
   function openFromOverview(id) { enter(); openSaved(id); }
   function newOption() { var keep = cfg.projectId, name = cfg.projectName; cfg = freshCfg(); cfg.projectId = keep; cfg.projectName = name; draftSave(); enter(); go('screen'); }
 
-  global.CinemaToolsApp = { boot: boot, enter: enter, backToIntro: backToIntro, go: go, set: set, setLabel: setLabel, setNotes: setNotes, saveOption: saveOption, openSaved: openSaved, openFromOverview: openFromOverview, renameSaved: renameSaved, archiveSaved: archiveSaved, setFinal: setFinal, clearFinal: clearFinal, adoptFromCD: adoptFromCD, adoptFromSeating: adoptFromSeating, downloadSVG: downloadSVG, newOption: newOption, finalSpec: finalSpec, _cfg: function () { return cfg; } };
+  global.CinemaToolsApp = { boot: boot, enter: enter, backToIntro: backToIntro, go: go, set: set, setLabel: setLabel, setNotes: setNotes, saveOption: saveOption, openSaved: openSaved, openFromOverview: openFromOverview, renameSaved: renameSaved, archiveSaved: archiveSaved, setFinal: setFinal, clearFinal: clearFinal, adoptFromCD: adoptFromCD, adoptFromSeating: adoptFromSeating, downloadSVG: downloadSVG, newOption: newOption, pdfModel: pdfModel, exportPdf: exportPdf, finalSpec: finalSpec, _cfg: function () { return cfg; } };
 })(typeof window !== 'undefined' ? window : this);

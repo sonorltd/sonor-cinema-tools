@@ -1,4 +1,13 @@
-# Cinema Tools — Claude Code Context (v0.1.0)
+# Cinema Tools — Claude Code Context (v0.2.0)
+
+> **v0.2.0 (2026-09-07) — luxury proposal PDF.** `data/cinema-tools-pdf.js` (CinemaToolsPdf) builds the
+> 8-page CINEMA DESIGN GEOMETRY document on the shared `data/sonor-pdf-luxury.js` chrome — identical cover /
+> hero / CEDIA strip / footer / section heads to the Seating Configurator proposal. Pages: cover · the numbers ·
+> dimensioned plan · section & sightlines · screen & viewing · projector & room · loudspeaker layout · notes &
+> reference (`SNR-CT-yymmdd-XXXX`). The three drawings were refactored into backend-agnostic SCENES
+> (`planScene / sectionScene / screenScene` → `svgOf()` for the app, `drawScene()` native pdf-lib vectors for
+> the PDF, seating CAD-on-cream palette) so the PDF can never drift from the screen. Verified headless
+> (Playwright + pdftoppm, every page eyeballed). Gilroy traps honoured: no `²`/`³`/`✓`, no ff-words.
 
 > **v0.1.0 (2026-09-07) — app birth.** Quick-calc companion to Cinema Design (CD). Seven tools on one
 > shared set of numbers (screen · viewing · projector · riser · room · RP22 audio layout · saved
@@ -6,7 +15,7 @@
 > ★ Final published to `projects.metadata.cinema_tools` for CD to reference. Built in a chat session;
 > went live from disk 2026-09-07 (repo `sonor-cinema-tools`, Pages, Master Hub card in hub v3.22.0).
 
-> Current version: **v0.1.0**
+> Current version: **v0.2.0**
 > **Spine version: 1.3** (SONOR-APP-SPINE.md — SonorShell mounted, hidden chrome; S-4.21)
 > Inherits: `../CLAUDE.md` (master brand rules + cross-project references) · `../HARMONY.md`
 > Brand source: `../Branding - CORE/brand-core.xml`
@@ -30,7 +39,10 @@ dashboard/sonor-cinema-tools.html   host: hidden SonorShell + scoped .sc canvas 
 index.html                          Pages redirect → dashboard/ (GITHUB PAGES URL LAW item 6)
 data/cinema-tools-config.js         window.__CINEMA_TOOLS_CONFIG__ — version · aspect ratios · SPEAKER_KLASS colour map · ANGLE_TARGETS · defaults
 data/cinema-tools-engine.js         pure maths (screen / viewing / projector / riser / room / RP22 placement) — no DOM
-data/cinema-tools-app.js            UI · SVG renderers · Supabase saves · ★ Final publish
+data/cinema-tools-app.js            UI · SCENES (plan/section/screen) + svgOf() · pdfModel() · Supabase saves · ★ Final publish
+data/cinema-tools-pdf.js            CinemaToolsPdf — 8-page luxury proposal on SonorPdfLuxury (drawScene = scenes → pdf-lib vectors)
+data/sonor-pdf-luxury.js            SYNCED root master — shared proposal chrome (never edit here)
+data/fonts/gilroy-*.otf · venice-double-seats.png · cedia-member-stacked.png   PDF assets (same as Seating / Aesthetic)
 data/app-vars.css                   aliasing layer onto brand.css tokens (S-4.1)
 data/sonor-*.js, *.css, sonor-rp22.js, sonor-rp23.js, sonor-db.js   SYNCED COPIES — sync-everything.sh overwrites these
 sql/2026-09-07_cinema_tools_configs.sql   applied 2026-09-07 (table + RLS + partial unique index + app_versions row)
@@ -64,6 +76,7 @@ docs/master-hub-patch/              card.html + apply script (card landed in hub
 | URL | `?config=<uuid>` · `?client=1` | open a saved option · hide the internal overview |
 
 ## Feature timeline
+- v0.2.0 (2026-09-07) — luxury proposal PDF (B-438b): CinemaToolsPdf on the shared chrome; drawings → scenes; `Proposal PDF` button on the Output tab (browser print kept as `Print`).
 - v0.1.0 (2026-09-07) — app birth (chat-built). 7 tabs verified headless, project bar loads live
   projects, end-to-end on 1392 Greystones (adopt from CD → save → ★ Final → metadata written; smoke
   row archived at go-live). Go-live from disk: repo + Pages + hub card + registry touchpoints.
@@ -75,7 +88,9 @@ docs/master-hub-patch/              card.html + apply script (card landed in hub
    Supabase `app_versions` (`cinema-tools`), plus sw/config sites if ever added.
 4. Standards come from `SonorRP22` / `SonorRP23`; the config fallbacks fire only when the synced
    files are missing — never extend the fallbacks instead of the masters.
-5. Keep CD parity: any change to `SPEAKER_KLASS` or the speaker-row shape is a cross-app change —
+5. PDF changes: render headlessly + eyeball every page before shipping (cinema-pdf-luxury §7). Drawings are
+   SCENES — add primitives/tokens in BOTH backends (`SCENE_TOKENS_SVG` + `PAL()`), never draw in one only.
+6. Keep CD parity: any change to `SPEAKER_KLASS` or the speaker-row shape is a cross-app change —
    confirm with Bryn and update CD's `_atmosSpks` / `16c-cinema-tools.js` in the same session.
 
 ## Backlog (see root BACKLOG.md B-438)
