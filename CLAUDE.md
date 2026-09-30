@@ -1,5 +1,7 @@
 # Cinema Tools — Claude Code Context (v0.2.0)
 
+> **Active theme: locked custom / slate canvas** — client-facing surface, `data-theme-lock` (sonor-platform §2 exemption); the cross-app ◐ cookie never flips it.
+
 > **v0.2.0 (2026-09-07) — luxury proposal PDF.** `data/cinema-tools-pdf.js` (CinemaToolsPdf) builds the
 > 8-page CINEMA DESIGN GEOMETRY document on the shared `data/sonor-pdf-luxury.js` chrome — identical cover /
 > hero / CEDIA strip / footer / section heads to the Seating Configurator proposal. Pages: cover · the numbers ·
