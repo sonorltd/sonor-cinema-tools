@@ -1,4 +1,4 @@
-# Cinema Tools — Claude Code Context (v0.2.0)
+# Cinema Tools — Claude Code Context (v0.2.1)
 
 > **Active theme: locked custom / slate canvas** — client-facing surface, `data-theme-lock` (sonor-platform §2 exemption); the cross-app ◐ cookie never flips it.
 
@@ -17,7 +17,7 @@
 > ★ Final published to `projects.metadata.cinema_tools` for CD to reference. Built in a chat session;
 > went live from disk 2026-09-07 (repo `sonor-cinema-tools`, Pages, Master Hub card in hub v3.22.0).
 
-> Current version: **v0.2.0**
+> Current version: **v0.2.1** (2026-10-17 consistency batch: synced masters, pinned supabase-js, served kit + theme boot). Previous: **v0.2.0**
 > **Spine version: 1.3** (SONOR-APP-SPINE.md — SonorShell mounted, hidden chrome; S-4.21)
 > Inherits: `../CLAUDE.md` (master brand rules + cross-project references) · `../HARMONY.md`
 > Brand source: `../Branding - CORE/brand-core.xml`
