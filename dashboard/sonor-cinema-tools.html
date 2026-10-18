@@ -399,7 +399,8 @@
     document.addEventListener('DOMContentLoaded', function(){ var v = document.getElementById('hdrVer'); if (v) v.textContent = 'v' + APP_VERSION; });
     try { window.__CT_DB__ = new SonorDB(); } catch (e) { console.warn('[cinema-tools] Supabase unavailable', e); }
     try { SonorShell.mount({ appKey:'cinema-tools', appName:'Cinema Tools', repo:'sonor-cinema-tools', version:APP_VERSION, faviconHref:'../data/favicon.svg', assetBase:'../data/', supabase:false, palette:{ self:'cinema-tools' } }); } catch (e) { console.warn('[cinema-tools] shell', e); }
-    CinemaToolsApp.boot();
+    // S-4.3 self-report: the shell runs supabase:false here, so the app reports its own version once the catalogue load has made the Supabase client
+    (function (rep) { Promise.resolve(CinemaToolsApp.boot()).then(rep, rep); })(function () { var d = window.__CT_DB__; if (d && d.versions && d.versions.report) d.versions.report('cinema-tools', APP_VERSION, 'Cinema Tools', 'sonor-cinema-tools').catch(function (e) { console.warn('[cinema-tools] version report', e && e.message); }); });
   </script>
 </body>
 </html>

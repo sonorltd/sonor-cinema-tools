@@ -7,6 +7,8 @@
 // The fallbacks below only fire if those files are missing (they are synced
 // by sync-everything.sh — never hand-edit the per-app copies).
 //
+// v0.2.2 (2026-10-17) — consistency batch (synced masters, pinned supabase-js, theme boot, served kit)
+// v0.2.1 (2026-10-17) — version self-report after boot
 // v0.2.0 (2026-09-07) — luxury proposal PDF (cinema-tools-pdf.js on the shared
 //                       SonorPdfLuxury chrome); drawings refactored to scenes
 // v0.1.0 (2026-09-07) — initial build (screen / viewing / projector / riser /
@@ -14,7 +16,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.2.1';
+  var VERSION = '0.2.2';
   var APP_KEY = 'cinema-tools';
 
   // ── Aspect ratios (canonical list — order = UI order) ────────────────────
