@@ -1,6 +1,8 @@
-# Cinema Tools — Claude Code Context (v0.2.1)
+# Cinema Tools — Claude Code Context (v0.2.2)
 
 > **Active theme: locked custom / slate canvas** — client-facing surface, `data-theme-lock` (sonor-platform §2 exemption); the cross-app ◐ cookie never flips it.
+
+> **v0.2.2 (2026-10-17) — consistency batch.** Shared masters synced (project-bar 1.14.0, kit 0.7.4 mirror, wq-sync 1.7.4, takeoffs-supabase RPC-first, wq-push 1.1.0), supabase-js pinned 2.45.4 + SRI, theme boot script first in `<head>`, served kit with local mirror fallback. `data-theme-lock` unchanged. No feature change.
 
 > **v0.2.1 (2026-10-17) — version self-report.** The shell mounts with `supabase:false`, so nothing wrote `app_versions` on boot; the dashboard now calls `db.versions.report('cinema-tools', APP_VERSION, …)` once after `boot()` (the catalogue load makes the SonorDB client). No feature change.
 
@@ -19,7 +21,7 @@
 > ★ Final published to `projects.metadata.cinema_tools` for CD to reference. Built in a chat session;
 > went live from disk 2026-09-07 (repo `sonor-cinema-tools`, Pages, Master Hub card in hub v3.22.0).
 
-> Current version: **v0.2.1**
+> Current version: **v0.2.2** (2026-10-17 consistency batch: synced masters, pinned supabase-js, served kit + theme boot). Previous: **v0.2.1**
 > **Spine version: 1.3** (SONOR-APP-SPINE.md — SonorShell mounted, hidden chrome; S-4.21)
 > Inherits: `../CLAUDE.md` (master brand rules + cross-project references) · `../HARMONY.md`
 > Brand source: `../Branding - CORE/brand-core.xml`
@@ -80,6 +82,8 @@ docs/master-hub-patch/              card.html + apply script (card landed in hub
 | URL | `?config=<uuid>` · `?client=1` | open a saved option · hide the internal overview |
 
 ## Feature timeline
+- v0.2.2 (2026-10-17) — consistency batch: synced masters, pinned supabase-js with SRI, theme boot first, served kit + local mirror fallback.
+- v0.2.1 (2026-10-17) — version self-report to `app_versions` after boot.
 - v0.2.0 (2026-09-07) — luxury proposal PDF (B-438b): CinemaToolsPdf on the shared chrome; drawings → scenes; `Proposal PDF` button on the Output tab (browser print kept as `Print`).
 - v0.1.0 (2026-09-07) — app birth (chat-built). 7 tabs verified headless, project bar loads live
   projects, end-to-end on 1392 Greystones (adopt from CD → save → ★ Final → metadata written; smoke
