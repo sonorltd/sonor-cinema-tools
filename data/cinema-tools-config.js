@@ -16,7 +16,7 @@
 (function (global) {
   'use strict';
 
-  var VERSION = '0.2.2';
+  var VERSION = '0.2.3';
   var APP_KEY = 'cinema-tools';
 
   // ── Aspect ratios (canonical list — order = UI order) ────────────────────

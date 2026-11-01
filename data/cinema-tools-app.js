@@ -296,7 +296,7 @@
   }
   async function exportPdf() {
     var P = global.CinemaToolsPdf;
-    if (!P || !P.available()) { toast('PDF engine not loaded — use Print / PDF', 'fail'); return; }
+    if (!P || !P.available()) { toast('PDF engine not loaded — reload the page and try again', 'fail'); return; }
     try { toast('Building proposal PDF…'); await P.generate(pdfModel()); toast('Proposal PDF downloaded'); }
     catch (e) { console.error('[cinema-tools] pdf', e); toast('PDF failed: ' + (e && e.message || e), 'fail'); }
   }
@@ -376,7 +376,7 @@
     } else if (t === 'output') {
       title = 'Design <span class="lt">option</span>.'; lead = 'Everything above on one sheet — the same strip + scale plan the Seating Configurator produces, with a section, the audio schedule and the numbers Cinema Design will reference.';
       left = panel('This option', '<label class="fld2"><span>Label</span><input type="text" value="' + esc(cfg.label) + '" placeholder="' + esc(defaultLabel()) + '" onchange="CinemaToolsApp.setLabel(this.value)"></label><label class="fld2 col"><span>Notes</span><textarea rows="3" onchange="CinemaToolsApp.setNotes(this.value)">' + esc(cfg.notes) + '</textarea></label>' +
-        '<div class="actions" style="margin-top:12px;flex-wrap:wrap"><button class="btn primary" onclick="CinemaToolsApp.saveOption(false)">' + (cfg._savedId ? 'Save changes' : 'Save option') + '</button>' + (cfg._savedId ? '<button class="btn ghost" onclick="CinemaToolsApp.saveOption(true)">Save as new</button>' : '') + '<button class="btn ghost" onclick="CinemaToolsApp.setFinal()" ' + (cfg._isFinal ? 'disabled' : '') + '>★ Set as FINAL for CD</button><button class="btn sec" onclick="CinemaToolsApp.exportPdf()">Proposal PDF</button><button class="btn ghost" onclick="window.print()">Print</button><button class="btn sec" onclick="CinemaToolsApp.downloadSVG()">Download plan SVG</button></div>' +
+        '<div class="actions" style="margin-top:12px;flex-wrap:wrap"><button class="btn primary" onclick="CinemaToolsApp.saveOption(false)">' + (cfg._savedId ? 'Save changes' : 'Save option') + '</button>' + (cfg._savedId ? '<button class="btn ghost" onclick="CinemaToolsApp.saveOption(true)">Save as new</button>' : '') + '<button class="btn ghost" onclick="CinemaToolsApp.setFinal()" ' + (cfg._isFinal ? 'disabled' : '') + '>★ Set as FINAL for CD</button><button class="btn sec" onclick="CinemaToolsApp.exportPdf()">Proposal PDF</button><button class="btn sec" onclick="CinemaToolsApp.downloadSVG()">Download plan SVG</button></div>' +
         finalBadge(), 'saved-panel') + '<div id="savedPanel"></div>';
     }
     body.innerHTML = '<div class="lead"><h2>' + title + '</h2><p>' + lead + '</p></div><div class="cfg-grid' + (t === 'output' ? ' out' : '') + '"><div class="cfg-left">' + left + '</div><div class="sticky" id="results"></div></div>';
