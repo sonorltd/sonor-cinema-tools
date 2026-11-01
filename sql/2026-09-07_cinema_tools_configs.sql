@@ -33,6 +33,6 @@ create policy cinema_tools_configs_upd on public.cinema_tools_configs for update
 insert into public.app_versions (app_key, version, app_name, repo, url_local, url_hosted, metadata)
 values ('cinema-tools', '0.1.0', 'Cinema Tools', 'sonor-cinema-tools',
         '../APP - Cinema Tools/dashboard/sonor-cinema-tools.html',
-        'https://sonorltd.github.io/sonor-cinema-tools/',
+        'https://apps.sonor.co.uk/sonor-cinema-tools/',
         '{"class":"app","notes":"v0.1.0: quick-calc companion to Cinema Design — screen/viewing/projector/riser/room/audio, scale plan + section, saved options per project, ★ Final → projects.metadata.cinema_tools"}'::jsonb)
 on conflict (app_key) do update set version = excluded.version, app_name = excluded.app_name, repo = excluded.repo, url_local = excluded.url_local, url_hosted = excluded.url_hosted, metadata = excluded.metadata, updated_at = now();

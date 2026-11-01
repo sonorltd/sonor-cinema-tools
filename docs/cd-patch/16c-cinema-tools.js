@@ -26,7 +26,7 @@ function _cinemaToolsUrl(params) {
   var isLocal = location.protocol === 'file:' || /localhost|127\.0\.0\.1/.test(location.hostname);
   var base = isLocal
     ? '../../APP - Cinema Tools/dashboard/sonor-cinema-tools.html'
-    : 'https://sonorltd.github.io/sonor-cinema-tools/dashboard/sonor-cinema-tools.html';
+    : 'https://apps.sonor.co.uk/sonor-cinema-tools/dashboard/sonor-cinema-tools.html';
   return base + (params ? ('?' + params) : '');
 }
 function _ctStatus(msg, isErr) {

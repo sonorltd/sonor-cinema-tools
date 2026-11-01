@@ -16,7 +16,7 @@ APP - Cinema Tools/
 └── docs/cd-patch/16c-cinema-tools.js      drop-in for CD (options panel + ● linked badge + → Plan)
 ```
 
-Register the repo as `sonor-cinema-tools` (GitHub Pages → `https://sonorltd.github.io/sonor-cinema-tools/`), add it to `sync-everything.sh`, then push via the `git-push` skill.
+Register the repo as `sonor-cinema-tools` (GitHub Pages → `https://apps.sonor.co.uk/sonor-cinema-tools/`), add it to `sync-everything.sh`, then push via the `git-push` skill.
 
 ## Data contract
 

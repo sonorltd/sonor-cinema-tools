@@ -25,7 +25,7 @@
 > **Spine version: 1.3** (SONOR-APP-SPINE.md — SonorShell mounted, hidden chrome; S-4.21)
 > Inherits: `../CLAUDE.md` (master brand rules + cross-project references) · `../HARMONY.md`
 > Brand source: `../Branding - CORE/brand-core.xml`
-> Repo: `sonor-cinema-tools` · Pages: https://sonorltd.github.io/sonor-cinema-tools/
+> Repo: `sonor-cinema-tools` · Pages: https://apps.sonor.co.uk/sonor-cinema-tools/
 > App key: `cinema-tools` · Theme: `slate` (`<html data-theme="slate">`)
 
 > **⚠ READ `/CINEMA-ARCHITECTURE.md` before touching anything that reads CD/CT data.** This app is a
@@ -104,3 +104,5 @@ docs/master-hub-patch/              card.html + apply script (card landed in hub
 ## Backlog (see root BACKLOG.md B-438)
 CD wiring via `docs/cd-patch/16c-cinema-tools.js` · `sonor-pdf-luxury.js` export · multi-row MLP ·
 screen-wall elevation + AT check · multi-sub presets · Supabase `_backup_*` RLS housekeeping.
+
+- 2026-11-01 — links → apps.sonor.co.uk (github.io retired)

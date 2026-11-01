@@ -157,7 +157,7 @@
     TABLE: 'cinema_tools_configs',
     cdUrl: function () {
       var isLocal = location.protocol === 'file:' || /localhost|127\.0\.0\.1/.test(location.hostname);
-      return isLocal ? '../../APP - Cinema Design/dashboard/sonor-cinema.html' : 'https://sonorltd.github.io/sonor-cinema/dashboard/sonor-cinema.html';
+      return isLocal ? '../../APP - Cinema Design/dashboard/sonor-cinema.html' : 'https://apps.sonor.co.uk/sonor-cinema/dashboard/sonor-cinema.html';
     }
   };
 })(typeof window !== 'undefined' ? window : this);
