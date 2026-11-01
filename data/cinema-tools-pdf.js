@@ -358,6 +358,16 @@
     var F = await lx.makeFonts(doc, BASE);
     m.ref = m.ref || mintRef();
 
+    // v0.2.4 — PROJECT = the project's ref ("1392 - Greystones" already names it), else ref · name, else the name; when that
+    // is wider than its cover cell, the ref's own code ("DEMO", "1392") — the project name is the cover title above it.
+    function projectLine(m) {
+      var r = String(m.projectRef || '').trim(), n = String(m.project || '').trim(), v;
+      if (r && (/\s-\s/.test(r) || (n && r.toLowerCase().indexOf(n.toLowerCase()) >= 0))) v = r;
+      else v = [r, n].filter(Boolean).join(' · ') || '—';
+      var cell = (lx.A4.w - lx.M * 2) / 3 - 18;
+      if (r && F.b.widthOfTextAtSize(pd(v), 12.5) > cell) { var code = r.split(/\s+-\s+/)[0].trim(); if (code && F.b.widthOfTextAtSize(pd(code), 12.5) <= cell) v = code; }
+      return v;
+    }
     var hero = null, cedia = null, fadeImg = null;
     try { hero = await lx.loadImage(doc, BASE + 'venice-double-seats.png'); } catch (e) {}
     try { cedia = await lx.loadImage(doc, BASE + 'cedia-member-stacked.png'); } catch (e) {}
@@ -371,7 +381,7 @@
       eyebrow: DOC_LABEL,
       title: m.project || 'Your Cinema',
       subtitle: m.label ? pd(m.label) : 'by Sonor',
-      info: [['PREPARED FOR', fit(F, F.b, m.client || m.project || '—', 12.5, (lx.A4.w - lx.M * 2) / 3 - 18)], ['PROJECT', fit(F, F.b, m.project || '—', 12.5, (lx.A4.w - lx.M * 2) / 3 - 18)], ['REFERENCE', m.ref]]
+      info: [['PREPARED FOR', fit(F, F.b, m.client || m.project || '—', 12.5, (lx.A4.w - lx.M * 2) / 3 - 18)], ['PROJECT', fit(F, F.b, projectLine(m), 12.5, (lx.A4.w - lx.M * 2) / 3 - 18)], ['REFERENCE', m.ref]]
     });
     pages.forEach(function (draw, i) { var pg = doc.addPage([lx.A4.w, lx.A4.h]); draw(lx.mk(pg, doc), F, i + 2, TOTAL); });
 

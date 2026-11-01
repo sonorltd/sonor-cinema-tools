@@ -140,8 +140,11 @@
       if (s.data) ctx.seating = s.data;
     } catch (e) {}
     try {
-      var p = await db.from('projects').select('metadata').eq('id', cfg.projectId).maybeSingle();
+      // v0.2.4 — the project's identity (client, ref, name) comes from the projects row itself: the bar's row can arrive
+      // before its list loads (or without client_name), which left the proposal cover's PREPARED FOR / PROJECT as "—".
+      var p = await db.from('projects').select('id,ref,name,client_name,address,metadata').eq('id', cfg.projectId).maybeSingle();
       ctx.final = (p.data && p.data.metadata && p.data.metadata[CFG.METADATA_KEY]) || null;
+      if (p.data) { var row = Object.assign({}, p.data); delete row.metadata; ctx.project = Object.assign({}, ctx.project || {}, row); if (row.name) cfg.projectName = row.name; }
     } catch (e) {}
   }
   // Adopt CD's room + screen + seating figures into the calculator
@@ -273,7 +276,8 @@
     return {
       appVersion: CFG.version, generated: d.toISOString(),
       dateText: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
-      project: cfg.projectName || '', client: (ctx.project && (ctx.project.client_name || ctx.project.client)) || '',
+      project: cfg.projectName || (ctx.project && ctx.project.name) || '', projectRef: (ctx.project && ctx.project.ref) || '',
+      client: projectClient(),
       label: cfg.label || defaultLabel(), isFinal: !!cfg._isFinal, notes: cfg.notes || '', configId: cfg._savedId,
       flags: fitFlags(),
       room: { w: cfg.room.w, d: cfg.room.d, h: cfg.room.h },
@@ -293,6 +297,11 @@
         speakers: A.speakers.map(function (s) { return { channel: s.channel, label: lab(s.channel), name: s.name, note: s.note || '', x: r0(s.x), y: r0(s.y), z: r0(s.z), side: s.side, az: s.az, el: s.el, dist: r0(s.dist), klass: s.klass, hex: CFG.SPEAKER_KLASS[s.klass].hex, pass: s.verdict.pass, vnote: s.verdict.note || '' }; }) },
       scenes: { plan: planScene(true, { speakers: true }), planClean: planScene(true, { speakers: false }), section: sectionScene(true), screen: screenScene(S) }
     };
+  }
+  // v0.2.4 — PREPARED FOR = projects.client_name, else the project name without its leading WeQuote number (the Seating rule)
+  function projectClient() {
+    var p = ctx.project || {};
+    return String(p.client_name || p.client || '').trim() || String(p.name || cfg.projectName || '').replace(/^\s*\d+\s*[-–·]?\s*/, '').trim();
   }
   async function exportPdf() {
     var P = global.CinemaToolsPdf;

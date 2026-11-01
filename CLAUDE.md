@@ -1,4 +1,4 @@
-# Cinema Tools — Claude Code Context (v0.2.3)
+# Cinema Tools — Claude Code Context (v0.2.4)
 
 > **Active theme: locked custom / slate canvas** — client-facing surface, `data-theme-lock` (sonor-platform §2 exemption); the cross-app ◐ cookie never flips it.
 
@@ -21,7 +21,7 @@
 > ★ Final published to `projects.metadata.cinema_tools` for CD to reference. Built in a chat session;
 > went live from disk 2026-09-07 (repo `sonor-cinema-tools`, Pages, Master Hub card in hub v3.22.0).
 
-> Current version: **v0.2.3** (2026-11-01, Bryn: "make all exports work in the best pdf version": the window.print() "Print" button on the summary is removed — the Proposal PDF (pdf-lib, shared chrome) is the one export; A4/A3 options not added — the proposal pack is fixed-format and adding paper sizes is not trivial there). Previous: **v0.2.2** (2026-10-17 consistency batch: synced masters, pinned supabase-js, served kit + theme boot). Previous: **v0.2.1**
+> Current version: **v0.2.4** (2026-11-01, Demo example re-render: the proposal cover printed "—" for PREPARED FOR and PROJECT — the project bar's row can reach `onProject` before the bar list loads (no name) and carries no `client_name`; `pullContext` now reads `projects` (`ref, name, client_name, address`) itself, PREPARED FOR = `client_name` (else the name without its leading WQ number, the Seating rule), PROJECT = the ref ("1392 - Greystones") or ref · name). Previous: **v0.2.3** (2026-11-01, Bryn: "make all exports work in the best pdf version": the window.print() "Print" button on the summary is removed — the Proposal PDF (pdf-lib, shared chrome) is the one export; A4/A3 options not added — the proposal pack is fixed-format and adding paper sizes is not trivial there). Previous: **v0.2.2** (2026-10-17 consistency batch: synced masters, pinned supabase-js, served kit + theme boot). Previous: **v0.2.1**
 > **Spine version: 1.3** (SONOR-APP-SPINE.md — SonorShell mounted, hidden chrome; S-4.21)
 > Inherits: `../CLAUDE.md` (master brand rules + cross-project references) · `../HARMONY.md`
 > Brand source: `../Branding - CORE/brand-core.xml`
